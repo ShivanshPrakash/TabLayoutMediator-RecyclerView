@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Sample App</string>
+    <string name="lorem_ipsum">Lorem Isum Lorem IsumLorem IsumLorem IsumvLorem Isum ...</string>
+    <string name="cancel">Cancel</string>
+    <string name="accept">Accept</string>
+    <string name="date">02 Oct, 2019</string>
+    <string name="description">Description</string>
+</resources>
