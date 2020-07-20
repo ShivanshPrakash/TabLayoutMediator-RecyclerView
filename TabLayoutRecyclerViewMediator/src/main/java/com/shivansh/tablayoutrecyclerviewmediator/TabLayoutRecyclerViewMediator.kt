@@ -7,19 +7,32 @@ import com.google.android.material.tabs.TabLayout
 
 /**
  * Created by Shivansh ON 13/07/20.
+ *
+ * A mediator class used to link tabs in TabLayout to items in a RecyclerView. This can be used to map different sections of
+ * a RecyclerView to a common header represented by a Tab in TabLayout.
  */
-class TabLayoutRecyclerViewMediator(private val recyclerView: RecyclerView,
-                                    private val headerCount: Int,
-                                    private val tabLayout: TabLayout,
-                                    private val mapHeaderPositionToItemPosition: (itemPosition: Int) -> Int?,
-                                    private val mapItemPositionToHeaderPosition: (itemPosition: Int) -> Int?,
-                                    private val autoRefresh: Boolean = true,
-                                    private val tabConfigurationStrategy: (tab: TabLayout.Tab, position: Int) -> Unit) {
+class TabLayoutRecyclerViewMediator(
+    private val recyclerView: RecyclerView,
+    var headerCount: Int,
+    private val tabLayout: TabLayout,
+    var mapHeaderPositionToItemPosition: (headerPosition: Int) -> Int?,
+    var mapItemPositionToHeaderPosition: (itemPosition: Int) -> Int?,
+    private val autoRefresh: Boolean = true,
+    private val tabConfigurationStrategy: (tab: TabLayout.Tab, position: Int) -> Unit
+) {
 
     private var isProgrammaticallyScrolled = false
+    private var tabProgrammaticallySelected = true
     private var recyclerAdapterObserver: RecyclerView.AdapterDataObserver? = null
     private var onScrollListener: RecyclerView.OnScrollListener? = null
     private var tabSelectedListener: TabLayout.OnTabSelectedListener? = null
+
+    private val smoothScroller: RecyclerView.SmoothScroller =
+        object : LinearSmoothScroller(recyclerView.context) {
+            override fun getVerticalSnapPreference(): Int {
+                return SNAP_TO_START
+            }
+        }
 
     fun attach() {
         if (autoRefresh && recyclerView.adapter != null) {
@@ -50,28 +63,30 @@ class TabLayoutRecyclerViewMediator(private val recyclerView: RecyclerView,
             }
             recyclerView.adapter!!.registerAdapterDataObserver(recyclerAdapterObserver as RecyclerView.AdapterDataObserver)
         }
+
+        // Add onScrollListener to update tabs corresponding to recyclerView scroll
         onScrollListener = TabLayoutOnPageChangeCallback()
+        recyclerView.addOnScrollListener(onScrollListener as TabLayoutOnPageChangeCallback)
+
+        // Add tab selected listener to update recycler view when a tab is selected
         tabSelectedListener = object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
-                val itemPosition = tab?.position?.let { mapHeaderPositionToItemPosition(it) }
-                if (itemPosition != null) {
-                    val smoothScroller: RecyclerView.SmoothScroller = object : LinearSmoothScroller(recyclerView.context) {
-                        override fun getVerticalSnapPreference(): Int {
-                            return SNAP_TO_START
-                        }
+                if (!tabProgrammaticallySelected) {
+                    val itemPosition = tab?.position?.let { mapHeaderPositionToItemPosition(it) }
+                    if (itemPosition != null) {
+                        smoothScroller.targetPosition = itemPosition
+                        isProgrammaticallyScrolled = true
+                        recyclerView.layoutManager?.startSmoothScroll(smoothScroller)
                     }
-                    smoothScroller.targetPosition = itemPosition
-                    isProgrammaticallyScrolled = true
-                    recyclerView.layoutManager?.startSmoothScroll(smoothScroller)
-                }
+                } else tabProgrammaticallySelected = false
             }
 
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {
+                tabProgrammaticallySelected = false
+            }
 
             override fun onTabUnselected(tab: TabLayout.Tab?) {}
         }
-
-        recyclerView.addOnScrollListener(onScrollListener as TabLayoutOnPageChangeCallback)
         tabLayout.addOnTabSelectedListener(tabSelectedListener as TabLayout.OnTabSelectedListener)
         populateTabsLayout()
     }
@@ -98,12 +113,15 @@ class TabLayoutRecyclerViewMediator(private val recyclerView: RecyclerView,
     private inner class TabLayoutOnPageChangeCallback : RecyclerView.OnScrollListener() {
 
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-            if (recyclerView.layoutManager is LinearLayoutManager && !isProgrammaticallyScrolled) {
-                var position = (recyclerView.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+            if (!isProgrammaticallyScrolled && recyclerView.layoutManager is LinearLayoutManager) {
+                var position =
+                    (recyclerView.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
                 if (position < 0) position = 0
                 val tabPosition = mapItemPositionToHeaderPosition(position)
                 if (tabPosition != null) {
+                    tabProgrammaticallySelected = true
                     tabLayout.setScrollPosition(tabPosition, 0f, true, true)
+                    tabLayout.selectTab(tabLayout.getTabAt(tabPosition), true)
                 }
             }
         }

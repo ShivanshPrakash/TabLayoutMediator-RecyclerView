@@ -18,6 +18,7 @@ class MainActivity : AppCompatActivity() {
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
 
+        // Data
         val itemList = listOf("Asia", "India", "China", "Pakistan", "Japan",
             "Africa", "South Africa", "Egypt", "Zimbabwe", "Kenya",
             "Europe", "France", "Russia", "Germany", "Italy", "United Kingdom")
@@ -27,14 +28,18 @@ class MainActivity : AppCompatActivity() {
         val isHeaderList = listOf(true, false, false, false, false, true, false, false, false, false, true,
             false, false, false, false, false)
 
-        val adapter = TabsRecyclerAdapter(itemList, isHeaderList)
 
+        // Setup recycler view
+        val adapter = TabsRecyclerAdapter(itemList, isHeaderList)
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
 
+        // processing data to map recyclerView items to tabs in tabLayout
         val headerMap = setHeaderMap(isHeaderList)
+        // processing data to map tabs in tabLayout to view index of recyclerView
         val itemMap = setItemMap(isHeaderList)
 
+        // Attach tabLayout to recyclerView
         val headerToItemMapping = { position: Int -> itemMap[position] }
         val itemToHeaderMapping = { position: Int -> headerMap[position] }
         TabLayoutRecyclerViewMediator(recyclerView, headerList.size, tabLayout, headerToItemMapping, itemToHeaderMapping) { tab, position ->
