@@ -114,20 +114,26 @@ class TabLayoutRecyclerViewMediator(
 
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
             if (!isProgrammaticallyScrolled && recyclerView.layoutManager is LinearLayoutManager) {
-                var position =
+                val visibleItemPosition =
                     (recyclerView.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
-                if (position < 0) position = 0
-                val tabPosition = mapItemPositionToHeaderPosition(position)
-                if (tabPosition != null) {
-                    tabProgrammaticallySelected = true
-                    tabLayout.setScrollPosition(tabPosition, 0f, true, true)
-                    tabLayout.selectTab(tabLayout.getTabAt(tabPosition), true)
-                }
+                mapItemPositionToHeaderPosition(visibleItemPosition)?.let { selectTab(it) }
             }
         }
 
         override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-            if (newState == RecyclerView.SCROLL_STATE_IDLE) isProgrammaticallyScrolled = false
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                isProgrammaticallyScrolled = false
+                val visibleItemHeader =
+                    mapItemPositionToHeaderPosition((recyclerView.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition())
+                if (visibleItemHeader != null && tabLayout.selectedTabPosition != visibleItemHeader)
+                    selectTab(visibleItemHeader)
+            }
+        }
+
+        private fun selectTab(position: Int) {
+            tabProgrammaticallySelected = true
+            tabLayout.setScrollPosition(position, 0f, true, true)
+            tabLayout.selectTab(tabLayout.getTabAt(position), true)
         }
     }
 }
