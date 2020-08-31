@@ -1,4 +1,6 @@
 # TabLayoutMediator-RecyclerView
+[![Release](https://jitpack.io/v/ShivanshPrakash/TabLayoutMediator-RecyclerView.svg)](https://jitpack.io/#ShivanshPrakash/TabLayoutMediator-RecyclerView)
+
 A mediator class used to link tabs in TabLayout to items in a RecyclerView. This can be used to map different sections of 
 a RecyclerView to a common header represented by a Tab in TabLayout.
 
